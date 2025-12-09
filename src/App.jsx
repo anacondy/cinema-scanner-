@@ -2,20 +2,23 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Globe, Search, Link as LinkIcon, Lock, ShieldAlert } from 'lucide-react';
 
 /**
- * CINEMATIC ARCHIVES - MULTI-ARTIFACT ANALYZER v6
+ * CINEMATIC ARCHIVES - MULTI-ARTIFACT ANALYZER v7
  * * Changelog:
- * - ADDED: Specific handling for 401 (Unauthorized) errors to show "Security Clearance Failed"
- * - REFINED: Error UI to match the "Darko" aesthetic
+ * - ADDED: API connection health check before scanning
+ * - IMPROVED: Network error detection and handling
+ * - ADDED: Detailed error messages for different failure scenarios
+ * - ENHANCED: Retry logic with better error categorization
  * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
  */
 
 // --- COMPONENT: ARTIFACT CARD ---
-const ArtifactCard = ({ file, onRemove }) => {
+const ArtifactCard = ({ file, onRemove, apiStatus }) => {
   const [imagePreview, setImagePreview] = useState(null);
-  const [status, setStatus] = useState('IDLE'); // IDLE, SCANNING, RESULT, ERROR, RESTRICTED, DEEP_SEARCHING, AUTH_ERROR
+  const [status, setStatus] = useState('IDLE'); // IDLE, SCANNING, RESULT, ERROR, RESTRICTED, DEEP_SEARCHING, AUTH_ERROR, NETWORK_ERROR, API_OFFLINE
   const [result, setResult] = useState(null);
   const [sources, setSources] = useState([]);
   const [scanColor, setScanColor] = useState('purple');
+  const [errorDetails, setErrorDetails] = useState(null);
 
   useEffect(() => {
     // Create preview
@@ -35,6 +38,22 @@ const ArtifactCard = ({ file, onRemove }) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       setStatus('AUTH_ERROR');
+      setErrorDetails({
+        title: 'No API Key Configured',
+        message: 'The Gemini API key is missing. Please configure VITE_GEMINI_API_KEY in your environment.',
+        suggestion: 'Get your API key from https://makersuite.google.com/app/apikey'
+      });
+      return;
+    }
+
+    // Check API status before attempting scan
+    if (apiStatus === 'offline') {
+      setStatus('API_OFFLINE');
+      setErrorDetails({
+        title: 'AI Service Offline',
+        message: 'Unable to connect to the Gemini AI service.',
+        suggestion: 'Check your internet connection and API key validity.'
+      });
       return;
     }
 
@@ -105,23 +124,47 @@ const ArtifactCard = ({ file, onRemove }) => {
 
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
             response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
                 }
             );
+
+            clearTimeout(timeout);
 
             // Handle 401 specifically (Auth Error) - Do not retry
             if (response.status === 401) {
                 setStatus('AUTH_ERROR');
+                setErrorDetails({
+                  title: 'Authentication Failed',
+                  message: 'Your API key is invalid or expired (401 Unauthorized).',
+                  suggestion: 'Generate a new API key from https://makersuite.google.com/app/apikey'
+                });
+                return;
+            }
+
+            // Handle 403 Forbidden
+            if (response.status === 403) {
+                const errorData = await response.json();
+                setStatus('AUTH_ERROR');
+                setErrorDetails({
+                  title: 'Access Forbidden',
+                  message: errorData.error?.message || 'API access is forbidden (403).',
+                  suggestion: 'Check if your API key has the required permissions and billing is enabled.'
+                });
                 return;
             }
 
             if (response.ok) break;
 
+            // Retry on rate limit or service unavailable
             if (response.status !== 429 && response.status !== 503) {
                  const errorText = await response.text();
                  throw new Error(`API Error ${response.status}: ${errorText}`);
@@ -131,6 +174,28 @@ const ArtifactCard = ({ file, onRemove }) => {
 
         } catch (e) {
             lastError = e;
+            
+            // Handle network errors
+            if (e.name === 'AbortError') {
+                setStatus('NETWORK_ERROR');
+                setErrorDetails({
+                  title: 'Request Timeout',
+                  message: 'The AI service is taking too long to respond.',
+                  suggestion: 'The service might be experiencing high load. Please try again in a moment.'
+                });
+                return;
+            }
+
+            if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                setStatus('NETWORK_ERROR');
+                setErrorDetails({
+                  title: 'Network Error',
+                  message: 'Unable to reach the AI service.',
+                  suggestion: 'Check your internet connection or the service may be temporarily unavailable.'
+                });
+                return;
+            }
+
             if (e.message.includes("API Error")) throw e; // Don't retry fatal errors
             
             const delay = Math.pow(2, attempt) * 1000;
@@ -141,7 +206,13 @@ const ArtifactCard = ({ file, onRemove }) => {
       if (!response || !response.ok) {
           const finalText = response ? await response.text() : lastError?.message;
           console.error("Final API Failure:", finalText);
-          throw new Error(finalText || "API Failed after retries");
+          setStatus('ERROR');
+          setErrorDetails({
+            title: 'Scan Failed',
+            message: `The AI service returned an error after multiple retries.`,
+            suggestion: 'Please try again or contact support if the issue persists.'
+          });
+          return;
       }
 
       data = await response.json();
@@ -170,6 +241,11 @@ const ArtifactCard = ({ file, onRemove }) => {
     } catch (error) {
       console.error("Analysis Error:", error);
       setStatus('ERROR');
+      setErrorDetails({
+        title: 'Unexpected Error',
+        message: error.message || 'An unexpected error occurred during analysis.',
+        suggestion: 'Please try again or report this issue if it persists.'
+      });
     }
   };
 
@@ -302,45 +378,91 @@ const ArtifactCard = ({ file, onRemove }) => {
       )}
 
       {/* AUTH ERROR STATE */}
-      {status === 'AUTH_ERROR' && (
-        <div className="flex flex-col items-center gap-4 animate-slide-up">
+      {status === 'AUTH_ERROR' && errorDetails && (
+        <div className="flex flex-col items-center gap-4 animate-slide-up max-w-md px-4">
           <div className="text-red-500 font-mono text-xs tracking-widest flex flex-col items-center gap-2 mt-4">
              <div className="flex items-center gap-2 animate-pulse bg-red-900/20 px-4 py-2 rounded border border-red-500/30">
                <ShieldAlert size={20} />
-               <span>SECURITY_CLEARANCE_FAILED</span>
+               <span>{errorDetails.title.toUpperCase().replace(/ /g, '_')}</span>
              </div>
-             <p className="text-white/40 text-center max-w-xs mt-2">
-               Terminal uplink rejected. Credentials invalid or expired (401).
+             <p className="text-white/60 text-center text-sm mt-2">
+               {errorDetails.message}
              </p>
+             <p className="text-amber-400/60 text-center text-xs mt-1 italic">
+               💡 {errorDetails.suggestion}
+             </p>
+          </div>
+        </div>
+      )}
+
+      {/* NETWORK ERROR / API OFFLINE STATE */}
+      {(status === 'NETWORK_ERROR' || status === 'API_OFFLINE') && errorDetails && (
+        <div className="flex flex-col items-center gap-4 animate-slide-up max-w-md px-4">
+          <div className="text-orange-500 font-mono text-xs tracking-widest flex flex-col items-center gap-2 mt-4">
+             <div className="flex items-center gap-2 animate-pulse bg-orange-900/20 px-4 py-2 rounded border border-orange-500/30">
+               <AlertCircle size={20} />
+               <span>{errorDetails.title.toUpperCase().replace(/ /g, '_')}</span>
+             </div>
+             <p className="text-white/60 text-center text-sm mt-2">
+               {errorDetails.message}
+             </p>
+             <p className="text-amber-400/60 text-center text-xs mt-1 italic">
+               💡 {errorDetails.suggestion}
+             </p>
+             <button 
+               onClick={() => analyzeArtifact(false)}
+               className="mt-3 px-6 py-2 bg-orange-600/30 hover:bg-orange-600/50 border border-orange-500/50 rounded text-white text-xs font-mono tracking-wider transition-all"
+             >
+               RETRY_SCAN
+             </button>
           </div>
         </div>
       )}
 
       {/* RESTRICTED / ERROR STATE */}
       {(status === 'RESTRICTED' || status === 'ERROR') && (
-        <div className="flex flex-col items-center gap-4 animate-slide-up">
+        <div className="flex flex-col items-center gap-4 animate-slide-up max-w-md px-4">
             <div className="text-red-400 font-mono text-xs tracking-widest flex flex-col items-center gap-2 mt-2">
             <div className="flex items-center gap-2 animate-pulse">
                 <FileWarning size={24} /> 
-                <span>{result?.title || "SIGNAL_LOST"}</span>
+                <span>{errorDetails?.title?.toUpperCase().replace(/ /g, '_') || result?.title || "SIGNAL_LOST"}</span>
             </div>
-            <p className="text-white/40 text-center max-w-xs">{result?.description || "Visual signature unclear."}</p>
+            <p className="text-white/60 text-center text-sm mt-2">
+              {errorDetails?.message || result?.description || "Visual signature unclear."}
+            </p>
+            {errorDetails?.suggestion && (
+              <p className="text-amber-400/60 text-center text-xs mt-1 italic">
+                💡 {errorDetails.suggestion}
+              </p>
+            )}
             </div>
 
-            <button 
-                onClick={() => analyzeArtifact(true)}
-                className="mt-2 group relative px-8 py-3 bg-transparent overflow-hidden border border-amber-500/30 hover:border-amber-500/80 transition-colors"
-            >
-                <div className="absolute inset-0 w-full h-full bg-amber-600/10 skew-x-12 group-hover:bg-amber-600/20 transition-all duration-300"></div>
-                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-amber-500/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                <span className="relative font-mono text-xs tracking-[0.2em] text-amber-200 group-hover:text-amber-100 flex items-center gap-3">
-                    <Globe size={14} /> DEEP_NETWORK_SCAN
-                </span>
-            </button>
-            <div className="flex items-center gap-2 text-[10px] text-amber-500/40 font-mono mt-1">
-                <Lock size={8} className="text-red-400/50" />
-                <span>SAFETY_FILTERS: DISABLED</span>
-            </div>
+            {status === 'RESTRICTED' && (
+              <>
+                <button 
+                    onClick={() => analyzeArtifact(true)}
+                    className="mt-2 group relative px-8 py-3 bg-transparent overflow-hidden border border-amber-500/30 hover:border-amber-500/80 transition-colors"
+                >
+                    <div className="absolute inset-0 w-full h-full bg-amber-600/10 skew-x-12 group-hover:bg-amber-600/20 transition-all duration-300"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-[2px] bg-amber-500/50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                    <span className="relative font-mono text-xs tracking-[0.2em] text-amber-200 group-hover:text-amber-100 flex items-center gap-3">
+                        <Globe size={14} /> DEEP_NETWORK_SCAN
+                    </span>
+                </button>
+                <div className="flex items-center gap-2 text-[10px] text-amber-500/40 font-mono mt-1">
+                    <Lock size={8} className="text-red-400/50" />
+                    <span>SAFETY_FILTERS: DISABLED</span>
+                </div>
+              </>
+            )}
+            {status === 'ERROR' && (
+              <button 
+                onClick={() => analyzeArtifact(false)}
+                className="mt-3 px-6 py-2 bg-red-600/30 hover:bg-red-600/50 border border-red-500/50 rounded text-white text-xs font-mono tracking-wider transition-all"
+              >
+                RETRY_SCAN
+              </button>
+            )}
         </div>
       )}
 
@@ -350,8 +472,54 @@ const ArtifactCard = ({ file, onRemove }) => {
 
 const App = () => {
   const [artifacts, setArtifacts] = useState([]);
+  const [apiStatus, setApiStatus] = useState('checking'); // checking, online, offline, no_key
   const canvasRef = useRef(null);
   const requestRef = useRef(null);
+
+  // --- API HEALTH CHECK ---
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        setApiStatus('no_key');
+        return;
+      }
+
+      try {
+        // Simple health check with a minimal request
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025?key=${apiKey}`,
+          {
+            method: 'GET',
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeout);
+
+        if (response.ok || response.status === 200) {
+          setApiStatus('online');
+        } else if (response.status === 401 || response.status === 403) {
+          setApiStatus('no_key'); // Invalid key
+        } else {
+          setApiStatus('offline');
+        }
+      } catch (error) {
+        console.error('API health check failed:', error);
+        setApiStatus('offline');
+      }
+    };
+
+    checkApiHealth();
+    
+    // Recheck every 2 minutes
+    const interval = setInterval(checkApiHealth, 120000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- PARTICLE SYSTEM (Optimized for 60fps+) ---
   useEffect(() => {
@@ -544,13 +712,17 @@ const App = () => {
               ARCHIVE_
             </h1>
             <span className="text-[10px] md:text-xs text-purple-400/50 font-mono tracking-[0.2em] mt-2 flex items-center gap-2">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-              SYSTEM ONLINE // {artifacts.length} ARTIFACTS
+              <span className={`w-2 h-2 rounded-full animate-pulse ${
+                apiStatus === 'online' ? 'bg-emerald-500' : 
+                apiStatus === 'checking' ? 'bg-amber-500' : 
+                'bg-red-500'
+              }`}></span>
+              AI {apiStatus === 'online' ? 'ONLINE' : apiStatus === 'checking' ? 'CHECKING' : apiStatus === 'no_key' ? 'NO_KEY' : 'OFFLINE'} // {artifacts.length} ARTIFACTS
             </span>
           </div>
           <div className="hidden sm:block text-right">
              <div className="flex gap-4 text-amber-500/60 text-xs font-mono tracking-widest border-r-2 border-amber-500/30 pr-4">
-               <span>DEEP_SCAN: READY</span>
+               <span>DEEP_SCAN: {apiStatus === 'online' ? 'READY' : 'UNAVAILABLE'}</span>
                <span>//</span>
                <span>SAFE_MODE: DISABLED</span>
              </div>
@@ -600,7 +772,8 @@ const App = () => {
                 <ArtifactCard 
                   key={file.name + file.lastModified + file.size} 
                   file={file} 
-                  onRemove={removeArtifact} 
+                  onRemove={removeArtifact}
+                  apiStatus={apiStatus}
                 />
               ))}
             </div>
