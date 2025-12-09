@@ -31,6 +31,13 @@ const ArtifactCard = ({ file, onRemove }) => {
   const analyzeArtifact = async (useGrounding = false) => {
     if (!imagePreview) return;
 
+    // Validate API key
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      setStatus('AUTH_ERROR');
+      return;
+    }
+
     if (useGrounding) {
         setStatus('DEEP_SEARCHING');
         setScanColor('amber');
@@ -41,7 +48,6 @@ const ArtifactCard = ({ file, onRemove }) => {
     }
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; // Use environment variable
       const base64Data = imagePreview.split(',')[1];
 
       const prompt = `
