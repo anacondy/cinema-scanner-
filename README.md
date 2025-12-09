@@ -1,9 +1,13 @@
 # 🌑 Cinematic Archives - AI Artifact Analyzer
 
 [![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen)](https://anacondy.github.io/cinema-scanner-/)
+[![Deploy](https://github.com/anacondy/cinema-scanner-/actions/workflows/deploy.yml/badge.svg)](https://github.com/anacondy/cinema-scanner-/actions/workflows/deploy.yml)
+[![CI](https://github.com/anacondy/cinema-scanner-/actions/workflows/ci.yml/badge.svg)](https://github.com/anacondy/cinema-scanner-/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/react-18.2.0-61dafb.svg)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/vite-5.0.8-646cff.svg)](https://vitejs.dev/)
+
+> **🔄 CI/CD Status:** Click the workflow badges above to check build and deployment status. See [WORKFLOWS.md](WORKFLOWS.md) for detailed monitoring instructions.
 
 ---
 
@@ -205,6 +209,7 @@ For more detailed information, check out:
 - 📙 [Build Guide](BUILDS.md) - Platform-specific build instructions
 - 📕 [Testing Documentation](TESTING.md) - Test results and benchmarks
 - 📗 [Contributing Guide](CONTRIBUTING.md) - How to contribute
+- 🔄 [Workflows Guide](WORKFLOWS.md) - CI/CD workflows and status verification
 - 🏷️ [Release Template](RELEASE_TEMPLATE.md) - Release notes format
 - 📋 [Project Overview](PROJECT.md) - Detailed project information
 - 🐛 [Issues](https://github.com/anacondy/cinema-scanner-/issues) - Report bugs or request features

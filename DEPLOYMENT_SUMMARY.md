@@ -10,10 +10,14 @@
 - ✅ Bundle sizes: ~165KB JS, ~25KB CSS (gzipped)
 
 ### 2. GitHub Actions Deployment
-- ✅ Created `.github/workflows/deploy.yml`
+- ✅ Created `.github/workflows/deploy.yml` for production deployment
+- ✅ Created `.github/workflows/ci.yml` for continuous integration
 - ✅ Automated deployment to GitHub Pages on push to main
+- ✅ CI workflow runs on pull requests and branch pushes
 - ✅ Configured for proper base path (`/cinema-scanner-/`)
 - ✅ Uses GitHub Pages artifact upload/deploy pattern
+- ✅ Added workflow status badges to README
+- ✅ Created WORKFLOWS.md for monitoring and verification
 
 ### 3. README Enhancement
 - ✅ Added live site link at the very top
@@ -77,6 +81,13 @@ Created 8 new documentation files:
 - Performance benchmarks
 - Browser support
 - Tested platforms
+
+#### WORKFLOWS.md (6,081 characters)
+- GitHub Actions workflow documentation
+- CI/CD pipeline explanation
+- Status verification guide
+- Troubleshooting workflows
+- Post-merge verification steps
 
 #### .env.example (228 characters)
 - API key configuration template
