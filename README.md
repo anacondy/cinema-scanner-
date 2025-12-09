@@ -1,5 +1,30 @@
 # 🌑 Cinematic Archives - AI Artifact Analyzer
 
+[![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen)](https://anacondy.github.io/cinema-scanner-/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/react-18.2.0-61dafb.svg)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/vite-5.0.8-646cff.svg)](https://vitejs.dev/)
+
+---
+
+## 📑 Table of Contents
+- [Live Site](#-live-site)
+- [Screenshots](#-screenshots)
+- [Features](#-features)
+- [About](#-about)
+- [Quick Start](#-quick-start)
+- [Build & Deploy](#-build--deploy)
+- [Platform Builds](#-platform-builds)
+- [Key Technologies](#-key-technologies)
+- [Development](#-development)
+- [Performance](#-performance)
+- [Browser Support](#-browser-support)
+- [Documentation](#-documentation)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
 ## 🔗 Live Site
 **🚀 [https://anacondy.github.io/cinema-scanner-/](https://anacondy.github.io/cinema-scanner-/)**
 
@@ -176,9 +201,13 @@ Check the [Releases](https://github.com/anacondy/cinema-scanner-/releases) page 
 ## 📖 Documentation
 
 For more detailed information, check out:
-- [Wiki](https://github.com/anacondy/cinema-scanner-/wiki) - Setup guides and tutorials
-- [PROJECT.md](PROJECT.md) - Detailed project documentation
-- [Issues](https://github.com/anacondy/cinema-scanner-/issues) - Report bugs or request features
+- 📘 [Wiki Documentation](WIKI.md) - Comprehensive setup guides and tutorials
+- 📙 [Build Guide](BUILDS.md) - Platform-specific build instructions
+- 📕 [Testing Documentation](TESTING.md) - Test results and benchmarks
+- 📗 [Contributing Guide](CONTRIBUTING.md) - How to contribute
+- 🏷️ [Release Template](RELEASE_TEMPLATE.md) - Release notes format
+- 📋 [Project Overview](PROJECT.md) - Detailed project information
+- 🐛 [Issues](https://github.com/anacondy/cinema-scanner-/issues) - Report bugs or request features
 
 ---
 
