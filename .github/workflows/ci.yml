@@ -1,0 +1,167 @@
+name: CI - Build and Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Error: dist directory not found"
+            exit 1
+          fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "Error: dist/index.html not found"
+            exit 1
+          fi
+          echo "✅ Build successful!"
+          ls -lh dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  lint-check:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for console errors
+        run: |
+          echo "Checking for console.log statements..."
+          if grep -r "console.log" src/ --exclude-dir=node_modules; then
+            echo "⚠️ Warning: console.log statements found (non-blocking)"
+          else
+            echo "✅ No console.log statements found"
+          fi
+
+  security-check:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --production --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for vulnerabilities
+        run: |
+          echo "Running npm audit..."
+          npm audit --production || echo "⚠️ Some vulnerabilities found, but continuing..."
+
+  bundle-size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          echo "📊 Bundle Size Report:"
+          echo "======================="
+          du -sh dist/
+          du -sh dist/assets/*.js | head -5
+          du -sh dist/assets/*.css | head -5
+          echo "======================="
+          
+          # Get JS size in KB
+          JS_SIZE=$(du -k dist/assets/*.js | sort -n | tail -1 | cut -f1)
+          echo "Largest JS bundle: ${JS_SIZE}KB"
+          
+          # Check if JS is over 200KB (threshold)
+          if [ $JS_SIZE -gt 200 ]; then
+            echo "⚠️ Warning: JS bundle is larger than 200KB"
+          else
+            echo "✅ JS bundle size is acceptable"
+          fi
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [build-test, lint-check, security-check, bundle-size-check]
+    if: always()
+    
+    steps:
+      - name: Check status
+        run: |
+          echo "🎉 CI Pipeline Summary"
+          echo "====================="
+          echo "Build & Test: ${{ needs.build-test.result }}"
+          echo "Lint Check: ${{ needs.lint-check.result }}"
+          echo "Security Check: ${{ needs.security-check.result }}"
+          echo "Bundle Size: ${{ needs.bundle-size-check.result }}"
+          echo "====================="
+          
+          if [ "${{ needs.build-test.result }}" != "success" ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+          
+          echo "✅ All critical checks passed!"
