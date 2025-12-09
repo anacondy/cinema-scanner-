@@ -101,13 +101,46 @@ npm run dev
 
 If you're deploying to GitHub Pages:
 
+### Setup Steps
+
 1. Go to your repository **Settings**
 2. Navigate to **Secrets and variables** → **Actions**
 3. Click **New repository secret**
 4. Add:
    - **Name:** `VITE_GEMINI_API_KEY`
    - **Value:** Your Gemini API key
-5. The GitHub Actions workflow will use this during deployment
+5. **Important:** Push a new commit to the `main` branch to trigger a rebuild
+6. Wait for the GitHub Actions workflow to complete (check the **Actions** tab)
+7. Once deployment succeeds, refresh the live site
+
+### ⚠️ Important Notes for GitHub Pages
+
+**The API key is embedded at BUILD TIME, not runtime:**
+- After adding the secret, you MUST push a new commit to trigger a rebuild
+- The secret is used during `npm run build` in the GitHub Actions workflow
+- Simply adding the secret won't update an already-deployed site
+- Check the **Actions** tab to verify the deployment succeeded with your secret
+
+### Verifying GitHub Pages Deployment
+
+1. Go to the **Actions** tab in your repository
+2. Look for the latest "Deploy to GitHub Pages" workflow run
+3. Verify it shows a green checkmark (✓)
+4. Click on the workflow run to see the build logs
+5. Confirm the build step completed successfully
+6. Visit your live site and check the status indicator
+
+### Troubleshooting GitHub Pages
+
+**Problem:** Added the secret but the site still shows "NO_KEY"
+
+**Solution:**
+1. Make sure you pushed a NEW commit after adding the secret
+2. Check the Actions tab - did the deployment workflow run?
+3. Look at the workflow logs - did the build succeed?
+4. If the workflow didn't run, try making a small change (like updating README) and push to `main`
+5. Wait for the full deployment to complete (usually 1-2 minutes)
+6. Hard refresh the site (Ctrl+Shift+R or Cmd+Shift+R)
 
 ## 🔒 Security Notes
 

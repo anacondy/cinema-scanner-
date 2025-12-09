@@ -728,10 +728,13 @@ const App = () => {
               </div>
 
               {/* Production note */}
-              <div className="bg-amber-900/20 border border-amber-500/30 rounded p-3 text-xs">
+              <div className="bg-amber-900/20 border border-amber-500/30 rounded p-3 text-xs space-y-2">
                 <p className="flex items-start gap-2">
                   <Sparkles size={14} className="shrink-0 mt-0.5 text-amber-400" />
                   <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_GEMINI_API_KEY</code> in Settings → Secrets → Actions. The GitHub Actions workflow will use this secret during the build process.</span>
+                </p>
+                <p className="flex items-start gap-2 text-purple-300/80 pl-5">
+                  <span>⚠️ <strong>Important:</strong> After adding the secret, you must push a new commit to <code className="bg-black/50 px-1 rounded text-emerald-300">main</code> branch to trigger a rebuild. The API key is embedded at build time, not runtime. Check the Actions tab to verify the deployment succeeded.</span>
                 </p>
               </div>
 
@@ -765,19 +768,21 @@ const App = () => {
 
               {/* Status indicator */}
               {apiStatus !== 'no_key' && apiStatus !== 'checking' && (
-                <div className={`flex items-center gap-2 text-xs font-mono p-2 rounded ${
+                <div className={`flex items-center gap-2 text-xs font-mono p-3 rounded ${
                   apiStatus === 'online' ? 'bg-emerald-900/30 text-emerald-300 border border-emerald-500/30' :
                   apiStatus === 'invalid_key' ? 'bg-red-900/30 text-red-300 border border-red-500/30' :
                   'bg-orange-900/30 text-orange-300 border border-orange-500/30'
                 }`}>
-                  <span className={`w-2 h-2 rounded-full ${
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${
                     apiStatus === 'online' ? 'bg-emerald-500' :
                     apiStatus === 'invalid_key' ? 'bg-red-500' :
                     'bg-orange-500'
                   } animate-pulse`}></span>
-                  {apiStatus === 'online' && 'API CONNECTION SUCCESSFUL - Ready to scan!'}
-                  {apiStatus === 'invalid_key' && 'INVALID API KEY - Please check your key'}
-                  {apiStatus === 'offline' && 'CANNOT REACH API SERVICE - Check your connection'}
+                  <span>
+                    {apiStatus === 'online' && '✅ API CONNECTION SUCCESSFUL - Ready to scan images!'}
+                    {apiStatus === 'invalid_key' && '❌ INVALID API KEY - The key is incorrect or expired. Generate a new one from Google AI Studio.'}
+                    {apiStatus === 'offline' && '⚠️ CANNOT REACH API SERVICE - Check your internet connection or the API key may be invalid.'}
+                  </span>
                 </div>
               )}
             </div>

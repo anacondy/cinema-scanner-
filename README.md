@@ -1,3 +1,7 @@
+**🚀 Live Demo:** [https://anacondy.github.io/cinema-scanner-/](https://anacondy.github.io/cinema-scanner-/)
+
+---
+
 # 🌑 Cinematic Archives - AI Artifact Analyzer
 
 [![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen)](https://anacondy.github.io/cinema-scanner-/)
