@@ -134,11 +134,24 @@ npm run preview
 ```
 
 ### Deploy to GitHub Pages
+
+#### Option 1: Automatic Deployment (Recommended)
+The site will be automatically deployed to GitHub Pages via GitHub Actions on every push to `main`.
+
+**Setup Required:**
+1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Add a secret with:
+   - **Name:** `VITE_GEMINI_API_KEY`
+   - **Value:** Your Google Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+4. Push to `main` branch to trigger automatic deployment
+
+#### Option 2: Manual Deployment
 ```bash
 npm run deploy
 ```
 
-The site will be automatically deployed to GitHub Pages via GitHub Actions on every push to `main`.
+**Note:** For manual deployment, ensure your `.env` file contains the API key before building.
 
 ---
 
@@ -199,6 +212,47 @@ Check the [Releases](https://github.com/anacondy/cinema-scanner-/releases) page 
 | Firefox | 88+ | ✅ Full |
 | Safari | 14+ | ✅ Full |
 | Edge | 90+ | ✅ Full |
+
+---
+
+## 🔧 Troubleshooting
+
+### AI Scanning Not Working
+
+If you see error messages like "SECURITY_CLEARANCE_FAILED" or "AI_SERVICE_OFFLINE", follow these steps:
+
+1. **Check API Key Configuration**
+   - **Local Development:** Ensure `.env` file exists with `VITE_GEMINI_API_KEY=your_key_here`
+   - **GitHub Pages:** Verify the secret is set in repository Settings → Secrets → Actions
+   - Get a valid API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+2. **Verify API Key Validity**
+   - Test your API key at [Google AI Studio](https://aistudio.google.com/)
+   - Ensure billing is enabled on your Google Cloud account (free tier available)
+   - Check that the API key has not expired
+
+3. **Check Internet Connection**
+   - The app requires an active internet connection to reach Google's AI service
+   - Check browser console (F12) for network errors
+
+4. **Common Error Messages**
+   - **"NO_API_KEY_CONFIGURED"**: Create a `.env` file or set the GitHub secret
+   - **"AUTHENTICATION_FAILED" (401)**: Invalid or expired API key
+   - **"ACCESS_FORBIDDEN" (403)**: Check API permissions and billing
+   - **"NETWORK_ERROR"**: Internet connection issue or service temporarily unavailable
+   - **"REQUEST_TIMEOUT"**: Service is experiencing high load, try again
+
+5. **Status Indicator**
+   - Look for the status indicator in the top-left corner:
+     - 🟢 **AI ONLINE**: Service is working properly
+     - 🟡 **AI CHECKING**: Testing connection
+     - 🔴 **AI OFFLINE**: Service unavailable or API key invalid
+     - 🔴 **AI NO_KEY**: No API key configured
+
+### Still Having Issues?
+
+- Check [GitHub Issues](https://github.com/anacondy/cinema-scanner-/issues) for similar problems
+- Create a new issue with error details from browser console (F12)
 
 ---
 
