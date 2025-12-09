@@ -86,6 +86,8 @@
 
 ## 🚀 Quick Start
 
+> **📖 Need help setting up your API key?** See the [API Setup Guide](API_SETUP_GUIDE.md) for detailed step-by-step instructions with troubleshooting.
+
 ### Prerequisites
 - Node.js 18+ installed
 - A Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
@@ -323,6 +325,7 @@ If you see error messages like "SECURITY_CLEARANCE_FAILED" or "AI_SERVICE_OFFLIN
 ## 📖 Documentation
 
 For more detailed information, check out:
+- 🔑 [**API Setup Guide**](API_SETUP_GUIDE.md) - Step-by-step Gemini API key configuration ⭐ **Start here!**
 - 📘 [Wiki Documentation](WIKI.md) - Comprehensive setup guides and tutorials
 - 📙 [Build Guide](BUILDS.md) - Platform-specific build instructions
 - 📕 [Testing Documentation](TESTING.md) - Test results and benchmarks
