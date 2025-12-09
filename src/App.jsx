@@ -11,6 +11,9 @@ import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Glob
  * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
  */
 
+// --- CONSTANTS ---
+const PLACEHOLDER_API_KEYS = ['your_gemini_api_key_here', 'your_actual_api_key_here'];
+
 // --- UTILITY FUNCTION: Fetch with timeout ---
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000) => {
   const controller = new AbortController();
@@ -508,7 +511,8 @@ const App = () => {
   const checkApiHealth = useCallback(async () => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    if (!apiKey) {
+    // Check if API key is missing or is the placeholder value
+    if (!apiKey || PLACEHOLDER_API_KEYS.includes(apiKey)) {
       setApiStatus('no_key');
       setShowApiSetup(true);
       return;
@@ -727,7 +731,7 @@ const App = () => {
               <div className="bg-amber-900/20 border border-amber-500/30 rounded p-3 text-xs">
                 <p className="flex items-start gap-2">
                   <Sparkles size={14} className="shrink-0 mt-0.5 text-amber-400" />
-                  <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_GEMINI_API_KEY</code> in Settings → Secrets → Actions</span>
+                  <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_GEMINI_API_KEY</code> in Settings → Secrets → Actions. The GitHub Actions workflow will use this secret during the build process.</span>
                 </p>
               </div>
 
@@ -869,6 +873,7 @@ const App = () => {
             </h1>
             <button 
               onClick={() => setShowApiSetup(true)}
+              aria-label="Open API key setup modal"
               className="text-[10px] md:text-xs text-purple-400/50 hover:text-purple-300 font-mono tracking-[0.2em] mt-2 flex items-center gap-2 transition-colors group"
             >
               <span className={`w-2 h-2 rounded-full animate-pulse ${
