@@ -41,7 +41,7 @@ const ArtifactCard = ({ file, onRemove }) => {
     }
 
     try {
-      const apiKey = ""; // Runtime provided key
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; // Use environment variable
       const base64Data = imagePreview.split(',')[1];
 
       const prompt = `
@@ -459,10 +459,28 @@ const App = () => {
     >
       
       <style>{`
+        /* Scrollbar Styling */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #050510; }
         ::-webkit-scrollbar-thumb { background: #3b0764; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #581c87; }
+        
+        /* Mobile Optimizations */
+        html, body {
+          min-height: 100vh;
+          min-height: -webkit-fill-available;
+          overscroll-behavior: none;
+        }
+        
+        /* Safe area insets for notches (20:9 displays) */
+        @supports (padding: env(safe-area-inset-top)) {
+          .safe-top { padding-top: env(safe-area-inset-top); }
+          .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+          .safe-left { padding-left: env(safe-area-inset-left); }
+          .safe-right { padding-right: env(safe-area-inset-right); }
+        }
+        
+        /* Animations */
         @keyframes scan-y {
           0% { top: 0%; opacity: 0; }
           10% { opacity: 1; }
@@ -473,6 +491,7 @@ const App = () => {
         .animate-pulse-fast { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
         .animate-slide-up { animation: slideUp 0.6s ease-out forwards; }
+        
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); filter: blur(5px); }
           to { opacity: 1; transform: translateY(0); filter: blur(0); }
@@ -484,6 +503,22 @@ const App = () => {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        
+        /* Performance Optimizations */
+        .gpu-accelerate {
+          transform: translateZ(0);
+          will-change: transform;
+        }
+        
+        /* Touch optimizations */
+        * {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+        }
+        
+        button, a {
+          -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3);
         }
       `}</style>
 
