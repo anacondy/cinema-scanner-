@@ -11,6 +11,24 @@ import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Glob
  * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
  */
 
+// --- UTILITY FUNCTION: Fetch with timeout ---
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    return response;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
+};
+
 // --- COMPONENT: ARTIFACT CARD ---
 const ArtifactCard = ({ file, onRemove, apiStatus }) => {
   const [imagePreview, setImagePreview] = useState(null);
@@ -124,20 +142,15 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
 
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-            response = await fetch(
+            response = await fetchWithTimeout(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                }
+                    body: JSON.stringify(payload)
+                },
+                30000 // 30s timeout
             );
-
-            clearTimeout(timeout);
 
             // Handle 401 specifically (Auth Error) - Do not retry
             if (response.status === 401) {
@@ -222,8 +235,22 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
         return;
       }
 
-      const textResponse = data.candidates[0].content.parts[0].text;
-      const jsonResult = JSON.parse(textResponse);
+      let textResponse;
+      let jsonResult;
+      
+      try {
+        textResponse = data.candidates[0].content.parts[0].text;
+        jsonResult = JSON.parse(textResponse);
+      } catch (parseError) {
+        console.error("JSON parsing error:", parseError, "Response:", textResponse);
+        setStatus('ERROR');
+        setErrorDetails({
+          title: 'Invalid Response',
+          message: 'The AI service returned an unexpected response format.',
+          suggestion: 'This may be a temporary issue. Please try again.'
+        });
+        return;
+      }
 
       let groundingSources = [];
       if (useGrounding && data.candidates[0].groundingMetadata?.groundingAttributions) {
@@ -488,20 +515,13 @@ const App = () => {
 
       try {
         // Simple health check with a minimal request
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025?key=${apiKey}`,
-          {
-            method: 'GET',
-            signal: controller.signal
-          }
+          { method: 'GET' },
+          10000 // 10s timeout
         );
 
-        clearTimeout(timeout);
-
-        if (response.ok || response.status === 200) {
+        if (response.ok) {
           setApiStatus('online');
         } else if (response.status === 401 || response.status === 403) {
           setApiStatus('no_key'); // Invalid key
