@@ -1,3 +1,7 @@
+**🚀 Live Demo:** [https://anacondy.github.io/cinema-scanner-/](https://anacondy.github.io/cinema-scanner-/)
+
+---
+
 # 🌑 Cinematic Archives - AI Artifact Analyzer
 
 [![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen)](https://anacondy.github.io/cinema-scanner-/)
@@ -86,6 +90,8 @@
 
 ## 🚀 Quick Start
 
+> **📖 Need help setting up your API key?** See the [API Setup Guide](API_SETUP_GUIDE.md) for detailed step-by-step instructions with troubleshooting.
+
 ### Prerequisites
 - Node.js 18+ installed
 - A Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
@@ -103,21 +109,56 @@
    npm install
    ```
 
-3. **Configure API Key**
+3. **Configure API Key** ⚠️ **IMPORTANT**
    
-   Create a `.env` file in the root directory:
+   The application **requires** a valid Gemini API key to function. Follow these steps:
+   
+   **Step 1:** Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Sign in with your Google account
+   - Click "Create API key"
+   - Copy the generated key
+   
+   **Step 2:** Create a `.env` file in the root directory:
+   ```bash
+   # On Linux/Mac
+   touch .env
+   
+   # On Windows (PowerShell)
+   New-Item .env
+   ```
+   
+   **Step 3:** Add your API key to the `.env` file:
    ```env
    VITE_GEMINI_API_KEY=your_actual_api_key_here
    ```
+   
+   **Example `.env` file:**
+   ```env
+   # Replace with your actual API key from Google AI Studio
+   VITE_GEMINI_API_KEY=AIzaSyC-xxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+   
+   ⚠️ **Security Note:** Never commit the `.env` file to version control. It's already in `.gitignore`.
 
 4. **Run development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+5. **Verify API Connection**
    
-   Navigate to `http://localhost:3000`
+   - Open your browser and navigate to `http://localhost:3000`
+   - Look at the top-left corner for the API status indicator:
+     - 🟢 **AI ONLINE** = API key is valid and working
+     - 🔴 **AI NO_KEY** = No API key found (click to see setup instructions)
+     - 🔴 **AI INVALID_KEY** = API key is invalid or expired
+     - 🟡 **AI CHECKING** = Testing connection
+   - If you see "NO_KEY" or "INVALID_KEY", click on the status to see detailed setup instructions
+
+6. **Test the Connection**
+   
+   - If the API setup modal appears, click "TEST CONNECTION" to verify your API key
+   - Once you see "AI ONLINE", you're ready to scan images!
 
 ---
 
@@ -217,6 +258,35 @@ Check the [Releases](https://github.com/anacondy/cinema-scanner-/releases) page 
 
 ## 🔧 Troubleshooting
 
+### API Key Setup Issues
+
+The application includes an **interactive setup wizard** to help you configure your API key:
+
+#### Visual Status Indicators
+
+When you open the application, look at the top-left corner for the API status:
+
+- 🟢 **AI ONLINE** → Everything is working! Ready to scan images
+- 🔴 **AI NO_KEY [CLICK_TO_SETUP]** → Click to see setup instructions
+- 🔴 **AI INVALID_KEY [CLICK_TO_SETUP]** → Your API key is invalid or expired
+- 🟡 **AI CHECKING** → Testing your connection
+- 🟠 **AI OFFLINE** → Cannot reach the API service (check internet)
+
+#### Step-by-Step Fix
+
+If you see **NO_KEY** or **INVALID_KEY**:
+
+1. **Click on the status indicator** in the top-left corner
+2. A setup modal will appear with detailed instructions
+3. Follow the 5-step guide in the modal:
+   - Get your API key from Google AI Studio
+   - Create a `.env` file
+   - Add `VITE_GEMINI_API_KEY=your_key`
+   - Restart the dev server
+   - Refresh the page
+4. Click the **"TEST CONNECTION"** button to verify
+5. You should see "API CONNECTION SUCCESSFUL" ✅
+
 ### AI Scanning Not Working
 
 If you see error messages like "SECURITY_CLEARANCE_FAILED" or "AI_SERVICE_OFFLINE", follow these steps:
@@ -259,6 +329,7 @@ If you see error messages like "SECURITY_CLEARANCE_FAILED" or "AI_SERVICE_OFFLIN
 ## 📖 Documentation
 
 For more detailed information, check out:
+- 🔑 [**API Setup Guide**](API_SETUP_GUIDE.md) - Step-by-step Gemini API key configuration ⭐ **Start here!**
 - 📘 [Wiki Documentation](WIKI.md) - Comprehensive setup guides and tutorials
 - 📙 [Build Guide](BUILDS.md) - Platform-specific build instructions
 - 📕 [Testing Documentation](TESTING.md) - Test results and benchmarks

@@ -11,6 +11,9 @@ import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Glob
  * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
  */
 
+// --- CONSTANTS ---
+const PLACEHOLDER_API_KEYS = ['your_gemini_api_key_here', 'your_actual_api_key_here'];
+
 // --- UTILITY FUNCTION: Fetch with timeout ---
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 30000) => {
   const controller = new AbortController();
@@ -499,47 +502,54 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
 
 const App = () => {
   const [artifacts, setArtifacts] = useState([]);
-  const [apiStatus, setApiStatus] = useState('checking'); // checking, online, offline, no_key
+  const [apiStatus, setApiStatus] = useState('checking'); // checking, online, offline, no_key, invalid_key
+  const [showApiSetup, setShowApiSetup] = useState(false);
   const canvasRef = useRef(null);
   const requestRef = useRef(null);
 
   // --- API HEALTH CHECK ---
-  useEffect(() => {
-    const checkApiHealth = async () => {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        setApiStatus('no_key');
-        return;
-      }
+  const checkApiHealth = useCallback(async () => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    // Check if API key is missing or is the placeholder value
+    if (!apiKey || PLACEHOLDER_API_KEYS.includes(apiKey)) {
+      setApiStatus('no_key');
+      setShowApiSetup(true);
+      return;
+    }
 
-      try {
-        // Simple health check with a minimal request
-        const response = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025?key=${apiKey}`,
-          { method: 'GET' },
-          10000 // 10s timeout
-        );
+    setApiStatus('checking');
 
-        if (response.ok) {
-          setApiStatus('online');
-        } else if (response.status === 401 || response.status === 403) {
-          setApiStatus('no_key'); // Invalid key
-        } else {
-          setApiStatus('offline');
-        }
-      } catch (error) {
-        console.error('API health check failed:', error);
+    try {
+      // Simple health check with a minimal request
+      const response = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025?key=${apiKey}`,
+        { method: 'GET' },
+        10000 // 10s timeout
+      );
+
+      if (response.ok) {
+        setApiStatus('online');
+        setShowApiSetup(false);
+      } else if (response.status === 401 || response.status === 403) {
+        setApiStatus('invalid_key');
+        setShowApiSetup(true);
+      } else {
         setApiStatus('offline');
       }
-    };
+    } catch (error) {
+      console.error('API health check failed:', error);
+      setApiStatus('offline');
+    }
+  }, []);
 
+  useEffect(() => {
     checkApiHealth();
     
     // Recheck every 2 minutes
     const interval = setInterval(checkApiHealth, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [checkApiHealth]);
 
   // --- PARTICLE SYSTEM (Optimized for 60fps+) ---
   useEffect(() => {
@@ -652,6 +662,134 @@ const App = () => {
       onDragOver={handleDragOver}
     >
       
+      {/* API SETUP MODAL */}
+      {showApiSetup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative max-w-2xl w-full bg-gradient-to-br from-purple-950/90 to-indigo-950/90 border border-purple-500/30 rounded-lg p-8 shadow-[0_0_50px_rgba(139,92,246,0.3)] animate-slide-up">
+            
+            {/* Close button */}
+            <button 
+              onClick={() => setShowApiSetup(false)}
+              className="absolute top-4 right-4 p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <AlertCircle className="text-amber-400" size={32} />
+              <h2 className="text-2xl font-mono font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-purple-300">
+                {apiStatus === 'invalid_key' ? 'INVALID_API_KEY' : 'API_KEY_REQUIRED'}
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4 text-white/80">
+              <p className="text-sm leading-relaxed">
+                {apiStatus === 'invalid_key' 
+                  ? 'The provided Gemini API key is invalid or has expired. Please check your API key and try again.'
+                  : 'To use the AI analysis features, you need to configure a Google Gemini API key.'}
+              </p>
+
+              {/* Step-by-step instructions */}
+              <div className="bg-black/30 rounded p-4 space-y-3 border border-purple-500/20">
+                <h3 className="text-sm font-mono text-purple-300 tracking-wider">SETUP INSTRUCTIONS:</h3>
+                
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="flex gap-3">
+                    <span className="text-amber-400 font-bold shrink-0">STEP 1:</span>
+                    <span>Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-purple-300 underline hover:text-purple-200">Google AI Studio</a></span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <span className="text-amber-400 font-bold shrink-0">STEP 2:</span>
+                    <span>Create a <code className="bg-black/50 px-1 rounded text-emerald-300">.env</code> file in the project root directory</span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <span className="text-amber-400 font-bold shrink-0">STEP 3:</span>
+                    <span>Add this line to the .env file:</span>
+                  </div>
+                  
+                  <div className="bg-black/50 p-3 rounded border border-emerald-500/20 overflow-x-auto">
+                    <code className="text-emerald-300 text-[11px]">VITE_GEMINI_API_KEY=your_actual_api_key_here</code>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <span className="text-amber-400 font-bold shrink-0">STEP 4:</span>
+                    <span>Restart the development server (<code className="bg-black/50 px-1 rounded text-emerald-300">npm run dev</code>)</span>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <span className="text-amber-400 font-bold shrink-0">STEP 5:</span>
+                    <span>Refresh this page to verify the connection</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Production note */}
+              <div className="bg-amber-900/20 border border-amber-500/30 rounded p-3 text-xs space-y-2">
+                <p className="flex items-start gap-2">
+                  <Sparkles size={14} className="shrink-0 mt-0.5 text-amber-400" />
+                  <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_GEMINI_API_KEY</code> in Settings → Secrets → Actions. The GitHub Actions workflow will use this secret during the build process.</span>
+                </p>
+                <p className="flex items-start gap-2 text-purple-300/80 pl-5">
+                  <span>⚠️ <strong>Important:</strong> After adding the secret, you must push a new commit to <code className="bg-black/50 px-1 rounded text-emerald-300">main</code> branch to trigger a rebuild. The API key is embedded at build time, not runtime. Check the Actions tab to verify the deployment succeeded.</span>
+                </p>
+              </div>
+
+              {/* Test Connection Button */}
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={checkApiHealth}
+                  disabled={apiStatus === 'checking'}
+                  className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900 disabled:opacity-50 rounded font-mono text-sm tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
+                >
+                  {apiStatus === 'checking' ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      TESTING...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={16} />
+                      TEST CONNECTION
+                    </>
+                  )}
+                </button>
+                
+                <button 
+                  onClick={() => setShowApiSetup(false)}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded font-mono text-sm tracking-wider transition-all"
+                >
+                  CLOSE
+                </button>
+              </div>
+
+              {/* Status indicator */}
+              {apiStatus !== 'no_key' && apiStatus !== 'checking' && (
+                <div className={`flex items-center gap-2 text-xs font-mono p-3 rounded ${
+                  apiStatus === 'online' ? 'bg-emerald-900/30 text-emerald-300 border border-emerald-500/30' :
+                  apiStatus === 'invalid_key' ? 'bg-red-900/30 text-red-300 border border-red-500/30' :
+                  'bg-orange-900/30 text-orange-300 border border-orange-500/30'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${
+                    apiStatus === 'online' ? 'bg-emerald-500' :
+                    apiStatus === 'invalid_key' ? 'bg-red-500' :
+                    'bg-orange-500'
+                  } animate-pulse`}></span>
+                  <span>
+                    {apiStatus === 'online' && '✅ API CONNECTION SUCCESSFUL - Ready to scan images!'}
+                    {apiStatus === 'invalid_key' && '❌ INVALID API KEY - The key is incorrect or expired. Generate a new one from Google AI Studio.'}
+                    {apiStatus === 'offline' && '⚠️ CANNOT REACH API SERVICE - Check your internet connection or the API key may be invalid.'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <style>{`
         /* Scrollbar Styling */
         ::-webkit-scrollbar { width: 8px; }
@@ -689,6 +827,13 @@ const App = () => {
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); filter: blur(5px); }
           to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(10px); }
@@ -731,14 +876,22 @@ const App = () => {
              <h1 className="text-3xl md:text-5xl font-bold tracking-[0.15em] font-mono text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-400 uppercase drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]">
               ARCHIVE_
             </h1>
-            <span className="text-[10px] md:text-xs text-purple-400/50 font-mono tracking-[0.2em] mt-2 flex items-center gap-2">
+            <button 
+              onClick={() => setShowApiSetup(true)}
+              aria-label="Open API key setup modal"
+              className="text-[10px] md:text-xs text-purple-400/50 hover:text-purple-300 font-mono tracking-[0.2em] mt-2 flex items-center gap-2 transition-colors group"
+            >
               <span className={`w-2 h-2 rounded-full animate-pulse ${
                 apiStatus === 'online' ? 'bg-emerald-500' : 
                 apiStatus === 'checking' ? 'bg-amber-500' : 
+                apiStatus === 'invalid_key' ? 'bg-red-500' :
                 'bg-red-500'
               }`}></span>
-              AI {apiStatus === 'online' ? 'ONLINE' : apiStatus === 'checking' ? 'CHECKING' : apiStatus === 'no_key' ? 'NO_KEY' : 'OFFLINE'} // {artifacts.length} ARTIFACTS
-            </span>
+              AI {apiStatus === 'online' ? 'ONLINE' : apiStatus === 'checking' ? 'CHECKING' : apiStatus === 'no_key' ? 'NO_KEY' : apiStatus === 'invalid_key' ? 'INVALID_KEY' : 'OFFLINE'} // {artifacts.length} ARTIFACTS
+              {(apiStatus === 'no_key' || apiStatus === 'invalid_key') && (
+                <span className="text-amber-400 group-hover:text-amber-300 ml-1">[CLICK_TO_SETUP]</span>
+              )}
+            </button>
           </div>
           <div className="hidden sm:block text-right">
              <div className="flex gap-4 text-amber-500/60 text-xs font-mono tracking-widest border-r-2 border-amber-500/30 pr-4">
