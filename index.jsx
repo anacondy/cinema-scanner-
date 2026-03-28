@@ -6,7 +6,7 @@ import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Glob
  * * Changelog:
  * - ADDED: Specific handling for 401 (Unauthorized) errors to show "Security Clearance Failed"
  * - REFINED: Error UI to match the "Darko" aesthetic
- * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
+ * - MAINTAINED: Model version pinned to 'gemini-1.5-flash' for environment compatibility
  */
 
 // --- COMPONENT: ARTIFACT CARD ---
@@ -100,7 +100,7 @@ const ArtifactCard = ({ file, onRemove }) => {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
             response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

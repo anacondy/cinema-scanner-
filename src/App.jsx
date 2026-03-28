@@ -8,7 +8,7 @@ import { Upload, Scan, Zap, X, AlertCircle, Loader2, Sparkles, FileWarning, Glob
  * - IMPROVED: Network error detection and handling
  * - ADDED: Detailed error messages for different failure scenarios
  * - ENHANCED: Retry logic with better error categorization
- * - MAINTAINED: Model version pinned to 'gemini-2.5-flash-preview-09-2025' for environment compatibility
+ * - MAINTAINED: Model version pinned to 'gemini-1.5-flash' for environment compatibility
  */
 
 // --- CONSTANTS ---
@@ -146,7 +146,7 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
             response = await fetchWithTimeout(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -156,12 +156,12 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
             );
 
             // Handle 401 specifically (Auth Error) - Do not retry
-            if (response.status === 401) {
+            if (response.status === 400 || response.status === 401) {
                 setStatus('AUTH_ERROR');
                 setErrorDetails({
                   title: 'Authentication Failed',
-                  message: 'Your API key is invalid or expired (401 Unauthorized).',
-                  suggestion: 'Generate a new API key from https://makersuite.google.com/app/apikey'
+                  message: `API returned an error (${response.status}). Keep in mind it could be an invalid or expired API key.`,
+                  suggestion: 'Check if your key is correct, or generate a new one from https://makersuite.google.com/app/apikey'
                 });
                 return;
             }
@@ -523,7 +523,7 @@ const App = () => {
     try {
       // Simple health check with a minimal request
       const response = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash?key=${apiKey}`,
         { method: 'GET' },
         10000 // 10s timeout
       );
@@ -531,7 +531,11 @@ const App = () => {
       if (response.ok) {
         setApiStatus('online');
         setShowApiSetup(false);
-      } else if (response.status === 401 || response.status === 403) {
+      } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+        setApiStatus('invalid_key');
+        setShowApiSetup(true);
+      } else if (response.status === 404) {
+        console.error("Health check error 404: model not found.");
         setApiStatus('invalid_key');
         setShowApiSetup(true);
       } else {
