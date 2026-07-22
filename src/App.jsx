@@ -56,12 +56,12 @@ const ArtifactCard = ({ file, onRemove, apiStatus }) => {
     if (!imagePreview) return;
 
     // Validate API key
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
     if (!apiKey) {
       setStatus('AUTH_ERROR');
       setErrorDetails({
         title: 'No API Key Configured',
-        message: 'The Gemini API key is missing. Please configure VITE_GEMINI_API_KEY in your environment.',
+        message: 'The Gemini API key is missing. Please configure VITE_MISTRAL_API_KEY in your environment.',
         suggestion: 'Get your API key from https://makersuite.google.com/app/apikey'
       });
       return;
@@ -509,7 +509,7 @@ const App = () => {
 
   // --- API HEALTH CHECK ---
   const checkApiHealth = useCallback(async () => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
     
     // Check if API key is missing or is the placeholder value
     if (!apiKey || PLACEHOLDER_API_KEYS.includes(apiKey)) {
@@ -716,7 +716,7 @@ const App = () => {
                   </div>
                   
                   <div className="bg-black/50 p-3 rounded border border-emerald-500/20 overflow-x-auto">
-                    <code className="text-emerald-300 text-[11px]">VITE_GEMINI_API_KEY=your_actual_api_key_here</code>
+                    <code className="text-emerald-300 text-[11px]">VITE_MISTRAL_API_KEY=your_actual_api_key_here</code>
                   </div>
                   
                   <div className="flex gap-3">
@@ -735,7 +735,7 @@ const App = () => {
               <div className="bg-amber-900/20 border border-amber-500/30 rounded p-3 text-xs space-y-2">
                 <p className="flex items-start gap-2">
                   <Sparkles size={14} className="shrink-0 mt-0.5 text-amber-400" />
-                  <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_GEMINI_API_KEY</code> in Settings → Secrets → Actions. The GitHub Actions workflow will use this secret during the build process.</span>
+                  <span><strong>For GitHub Pages deployment:</strong> Add the API key as a repository secret named <code className="bg-black/50 px-1 rounded text-emerald-300">VITE_MISTRAL_API_KEY</code> in Settings → Secrets → Actions. The GitHub Actions workflow will use this secret during the build process.</span>
                 </p>
                 <p className="flex items-start gap-2 text-purple-300/80 pl-5">
                   <span>⚠️ <strong>Important:</strong> After adding the secret, you must push a new commit to <code className="bg-black/50 px-1 rounded text-emerald-300">main</code> branch to trigger a rebuild. The API key is embedded at build time, not runtime. Check the Actions tab to verify the deployment succeeded.</span>

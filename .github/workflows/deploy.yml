@@ -34,11 +34,11 @@ jobs:
 
       - name: Build
         env:
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY || vars.VITE_GEMINI_API_KEY }}
+          VITE_MISTRAL_API_KEY: ${{ secrets.VITE_MISTRAL_API_KEY || vars.VITE_MISTRAL_API_KEY }}
         run: |
           # Debug to verify the key length is > 0 (without printing the key itself)
-          if [ -n "$VITE_GEMINI_API_KEY" ]; then
-            echo "API Key is present (length: ${#VITE_GEMINI_API_KEY})"
+          if [ -n "$VITE_MISTRAL_API_KEY" ]; then
+            echo "API Key is present (length: ${#VITE_MISTRAL_API_KEY})"
           else
             echo "API Key is MISSING in GitHub Secrets/Variables"
           fi
